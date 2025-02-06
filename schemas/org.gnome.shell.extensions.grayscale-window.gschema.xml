@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<schemalist>
+	<schema path="/org/gnome/shell/extensions/grayscale-window/" id="org.gnome.shell.extensions.grayscale-window">
+		<key type="as" name="grayscale-window-shortcut">
+			<default><![CDATA[['<Super>G']]]></default>
+		</key>
+		<key type="as" name="grayscale-global-shortcut">
+			<default><![CDATA[['<Super><Shift>G']]]></default>
+		</key>
+	</schema>
+</schemalist>
