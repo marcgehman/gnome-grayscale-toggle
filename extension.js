@@ -4,8 +4,30 @@ import St from 'gi://St';
 import Shell from 'gi://Shell';
 import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
-
 import {Extension, gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
+
+
+/*
+    This extension allows the user to toggle grayscale on and off on their desktop.
+		The extension provides two keybindings:
+		1. `Super + G` - Toggles grayscale on the currently focused window.
+		2. `Ctrl + Super + G` - Toggles grayscale on the entire GNOME Shell.
+			(i.e. the wallpaper, desktop icons, and all application windows).
+	
+	GNOME has several components:
+		- Meta
+		- St
+		- Clutter
+		- etc.
+	We leverage the `Clutter.DesaturateEffect` class to apply the grayscale effect.
+
+	GNOME Development Tips:
+	 - Use `looking glass`.
+	   On Ubuntu, we can use `Alt + F2` and type `lg` to open the looking glass.
+	   Here we can inspect the GNOME Shell elements and their properties.
+
+	*/
+
 
 const SHORTCUT = 'grayscale-window-shortcut';
 const GLOBAL_SHORTCUT = 'grayscale-global-shortcut';
@@ -18,25 +40,15 @@ class DesaturateEffect extends Clutter.DesaturateEffect {
     }
 });
 
-
-
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
-// The purpose of this function is to apply grayscale effect 
-// to various 'actor' objects in the GNOME Shell.
-// 1. Children within the `Main.uiGroup` object.
-//    - a) Children within the `Meta.WindowGroup` object.
-//         The `Meta.WindowGroup` object is the background.
-//         This includes the wallpaper and desktop icon
-// 2. The `global.get_window_actors()` object.
-//    - This object contains all the application windows currently open.
-//       - i.e. browser windows, terminal, VSCode, etc.
-function applyGrayscale() {
+// Applies grayscale effect to GNOME Shell elements:
+// 1. Children inside `Main.uiGroup`, particularly elements of `Meta.WindowGroup` (background, wallpaper, desktop icons).
+// 2. Open application windows retrieved via `global.get_window_actors()`.
+function applyGlobalGrayscale() {
 	// Set background grey
 	Main.uiGroup.get_children().forEach(actor => {
-		let effect = new GrayscaleEffect();
-		//actor.add_effect_with_name('grayscale-color', effect);
-		
+		let effect = new GrayscaleEffect();		
 		if (actor instanceof Meta.WindowGroup) {
 			actor.get_children().forEach(child => {
 				if(!actor.get_effect('grayscale-color')) {
@@ -65,8 +77,8 @@ function applyGrayscale() {
 	
 }
 
-
-function removeGrayscale() {
+// Removes grayscale effect from all affected elements.
+function removeGlobalGrayscale() {
 	Main.uiGroup.get_children().forEach(actor => {
 		if (actor instanceof Meta.WindowGroup) {
 			actor.get_children().forEach(child => {
@@ -84,16 +96,8 @@ function removeGrayscale() {
 
 
 
-
-
-
 export default class GrayscaleWindow extends Extension {
-	// constructor() {
-    //     this.global_toggle = false;
-    // }
-	// ---------------------------------------------------------------
-	// FOCUSED: Apply the grayscale effect to the currently focused window.
-	// ---------------------------------------------------------------
+    // Toggles grayscale effect for the currently focused window.
 	toggle_effect() {
 		global.get_window_actors().forEach(function(actor) {
 			let meta_window = actor.get_meta_window();
@@ -110,21 +114,15 @@ export default class GrayscaleWindow extends Extension {
 			}
 		}, this);
 	}
-	// ---------------------------------------------------------------
-	// GLOBAL: Apply the grayscale effect to the entire GNOME Shell, globally.
-	// ---------------------------------------------------------------
-	toggle_global_effect() {
-		// if (this.global_toggle) {
-		// 	removeGrayscale();
-		// 	this.global_toggle = false;
-		// } else {
 
+    // Toggles grayscale effect globally for the entire GNOME Shell UI.
+	toggle_global_effect() {
 		let uiGroup = Main.uiGroup
 		if (uiGroup._grayscale_global_tag) {
-			removeGrayscale();
+			removeGlobalGrayscale();
 			uiGroup._grayscale_global_tag = false;
 		} else if (uiGroup._grayscale_global_tag === undefined || uiGroup._grayscale_global_tag === null || uiGroup._grayscale_global_tag == false) {
-			applyGrayscale();
+			applyGlobalGrayscale();
 			uiGroup._grayscale_global_tag = true;
 		}
 
@@ -132,7 +130,8 @@ export default class GrayscaleWindow extends Extension {
 
 	enable() {
 		this._settings = this.getSettings();
-
+		
+		// Register keyboard shortcuts.
 		Main.wm.addKeybinding(
 			SHORTCUT,
 			this._settings,
@@ -158,6 +157,7 @@ export default class GrayscaleWindow extends Extension {
 		}, this);
 	}
 
+	// Cleanup when the extension is disabled.
 	disable() {
 		Main.wm.removeKeybinding(SHORTCUT);
 		Main.wm.removeKeybinding(GLOBAL_SHORTCUT);
@@ -169,4 +169,3 @@ export default class GrayscaleWindow extends Extension {
 		this._settings = null;
 	}
 };
-
